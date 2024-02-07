@@ -9,6 +9,9 @@ const path = require('path');
 const mongoose = require('mongoose');
 const uploadMiddleware = require('./middleware/uploadmidle');
 require('dotenv').config();
+const { Registeruser } = require('./model');
+const { RegisteruserSchema } = require('./model');
+
 
 const app = express();
 app.use(express.json());
@@ -21,11 +24,11 @@ app.use('/uploads', express.static('uploads'));
 // Ensure the 'uploads' directory exists
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads'); // Specify the directory where uploaded files will be stored
+  destination: (req, file, callback) => {
+    callback(null, './uploads'); // specify the destination folder
   },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname); // Use the original file name
+  filename: (req, file, callback) => {
+    callback(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
   },
 });
 
@@ -51,41 +54,49 @@ connectToDatabase();
   });
 })();
 
-// Routes for file upload
-  app.post('/uploadPhoto', upload.single('file'), (req, res) => {
+app.post('/uploadPhoto', upload.single('file'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file provided' });
+    // Assuming you save the filename in the MongoDB document
+    const photoUrl = req.file.filename;
+
+    // Assuming you have a User model
+    const userId = req.Registeruser; // Access user ID from req.user
+
+    // Update the user's profileImage field in MongoDB
+    const updatedUser = await Registeruser.findByIdAndUpdate(userId, { profileImage: photoUrl }, { new: true });
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    const uploadedFile = req.file;
-    const photoUrl = `http://localhost:5000/uploads/${uploadedFile.filename}`;
-
-    res.json({ message: 'Photo uploaded successfully', photoUrl });
+    res.status(200).json({ photoUrl });
   } catch (error) {
     console.error('Error uploading photo:', error);
+    res.status(500).json({ error: 'Error uploading photo' });
+  }
+});
+
+
+
+
+app.post('/updateProfile/:userId', upload.single('file'), async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    let updatedUser = { ...req.body };
+
+    if (req.file) {
+      const photoUrl = req.file.filename;
+
+      updatedUser = await Registeruser.findByIdAndUpdate(userId, { profileImage: photoUrl }, { new: true });
+
+      // Update the default image URL in MongoDB
+      await Registeruser.updateOne({}, { $set: { profileImage: photoUrl } });
+    }
+
+    res.status(200).json({ message: 'Profile updated successfully', user: updatedUser });
+  } catch (error) {
+    console.error('Error updating profile:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
-// // Route for updating profile with file upload middleware
-// app.post('/updateProfile', uploadMiddleware, async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-//     let updatedUser = { ...req.body };
-
-//     if (req.file) {
-//       const photoUrl = `http://localhost:5000/uploads/${req.file.filename}`;
-//       updatedUser = { ...updatedUser, profileImage: photoUrl };
-
-//       // You can save the updated user information to MongoDB here
-//       // For example, if you have a function called updateUserProfile, you can call it here
-//       // await updateUserProfile(userId, updatedUser);
-//     }
-
-//     res.json({ message: 'Profile updated successfully', user: updatedUser });
-//   } catch (error) {
-//     console.error('Error updating profile:', error);
-//     res.status(500).json({ message: 'Internal Server Error' });
-//   }
-// });

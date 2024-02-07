@@ -1,28 +1,22 @@
-const util = require('util');
 const multer = require('multer');
-const { GridFsStorage } = require('multer-gridfs-storage');
-const dbconfig = require('../database');
-const mongoose = require('mongoose');
+const path = require('path');
 
-const storage = new GridFsStorage({
-  url: 'mongodb://localhost:27017/userdata',
-  file: (req, file) => {
-    const match = ["image/png", "image/jpeg"];
-    if (match.indexOf(file.mimetype) === -1) {
-      const filename = `${Date.now()}-image-${file.originalname}`;
-      return { filename };
-    }
-    return {
-      bucketName: dbconfig.imgBucket,
-      filename: `${Date.now()}-image-${file.originalname}`,
-      _id: new mongoose.Types.ObjectId(),
-    };
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads'); // Specify the directory where uploaded files will be stored
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   },
 });
 
-const upload = multer({ storage: storage }).single('file');
+const upload = multer({ storage: storage });
 
-const uploadFiles = multer({ storage: storage }).single('file');
-const uploadFilesMiddleware = util.promisify(uploadFiles);
+// Middleware function to handle file upload
+const uploadMiddleware = upload.single('file');
 
-module.exports = uploadFilesMiddleware;
+
+
+
+module.exports = uploadMiddleware;

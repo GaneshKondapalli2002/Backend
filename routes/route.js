@@ -2,7 +2,7 @@ const express = require('express');
 const { loginUser } = require('../controllers/login');
 const { registerUser } = require('../controllers/register');
 const { getData, editUser, deleteUser } = require('../controllers/get');
-const { verifyUser } = require('../controllers/verifyemail');
+const { verifyOTP } = require('../controllers/verifyemail');
 const { verifyToken} = require('../middleware/verify-token');
 const uploadMiddleware = require('../middleware/uploadmidle');
 const { updateProfile } = require('../controllers/profile');
@@ -16,7 +16,7 @@ router.post('/login', loginUser);
 router.get('/getData', verifyToken,getData);
 router.put('/editUser/:id', editUser);
 router.delete('/deleteUser/:id', deleteUser);
-router.get('/verify', verifyUser);
+router.post('/verify-otp', verifyOTP);
 router.post('/verifyToken', verifyToken);
 
 router.post('/updateProfile', uploadMiddleware, async (req, res) => {

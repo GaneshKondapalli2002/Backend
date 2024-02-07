@@ -30,19 +30,23 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-const sendVerificationEmail = async (email, verificationLink) => {
+const generateOTP = () => {
+    // Generate a random 6-digit OTP
+    return Math.floor(100000 + Math.random() * 900000);
+};
+
+const sendVerificationEmail = async (email, otp) => {
     const mailOptions = {
         from: 'kondapalliganeshsiva@gmail.com',
         to: email,
-        subject: 'Confirm your email address',
-        text: `Click on this link to verify your email: ${verificationLink}`,
+        subject: 'Your One Time Password (OTP)',
+        text: `please verify E-mail with OTP . Your OTP is: ${otp}`,
     };
-    
-     await transporter.sendMail(mailOptions);
 
+    await transporter.sendMail(mailOptions);
 
+    return otp; // Return the generated OTP
 };
-
 module.exports = {
     sendVerificationEmail,
 };
